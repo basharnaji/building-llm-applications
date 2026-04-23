@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 import os
 
 load_dotenv() #A
-api_key = os.getenv("API_KEY") #B
+api_key = os.getenv("CLAUDE_API_KEY") #B
 
 def get_llm(): #C
     return ChatAnthropic(api_key=api_key, 

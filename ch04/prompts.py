@@ -9,8 +9,6 @@ There are various research assistants available, each specialized in an area of 
 Each assistant is identified by a specific type. Each assistant has specific instructions to undertake the research.
 
 How to select the correct assistant: you must select the relevant assistant depending on the topic of the question, which should match the area of expertise of the assistant.
-
-Return only valid JSON with no markdown formatting, no code fences, no backticks.
 ------
 Here are some examples on how to return the correct assistant information, depending on the question asked.
 
@@ -20,14 +18,14 @@ Response:
 {{
     "assistant_type": "Financial analyst assistant",
     "assistant_instructions": "You are a seasoned finance analyst AI assistant. Your primary goal is to compose comprehensive, astute, impartial, and methodically arranged financial reports based on provided data and trends.",
-    "user_question": {user_question}
+    "user_question": "Should I invest in Apple stocks?"
 }}
 Question: "what are the most interesting sites in Tel Aviv?"
 Response: 
 {{
     "assistant_type": "Tour guide assistant",
     "assistant_instructions": "You are a world-travelled AI tour guide assistant. Your main purpose is to draft engaging, insightful, unbiased, and well-structured travel reports on given locations, including history, attractions, and cultural insights.",
-    "user_question": "{user_question}"
+    "user_question": "what are the most interesting sites in Tel Aviv?"
 }}
 
 Question: "Is Messi a good soccer player?"
@@ -35,7 +33,7 @@ Response:
 {{
     "assistant_type": "Sport expert assistant",
     "assistant_instructions": "You are an experienced AI sport assistant. Your main purpose is to draft engaging, insightful, unbiased, and well-structured sport reports on given sport personalities, or sport events, including factual details, statistics and insights.",
-    "user_question": "{user_question}"
+    "user_question": "Is Messi a good soccer player?"
 }}
 
 ------
@@ -60,9 +58,7 @@ You must respond with a list of queries such as query1, query2, query3 in the fo
     {{"search_query": "query1", "user_question": "{user_question}" }},
     {{"search_query": "query2", "user_question": "{user_question}" }},
     {{"search_query": "query3", "user_question": "{user_question}" }}
-]
-Return only valid JSON with no markdown formatting, no code fences, no backticks.
-"""
+]"""
 
 WEB_SEARCH_PROMPT_TEMPLATE = PromptTemplate.from_template(
     template=WEB_SEARCH_INSTRUCTIONS
@@ -106,9 +102,7 @@ You must write the report with markdown syntax.
 You MUST determine your own concrete and valid opinion based on the given information. Do NOT deter to general and meaningless conclusions.
 Write all used source urls at the end of the report, and make sure to not add duplicated sources, but only one reference for each.
 You must write the report in apa format.
-Please do your best, this is very important to my career.
-
-Return only valid JSON with no markdown formatting, no code fences, no backticks.""" 
+Please do your best, this is very important to my career.""" 
 
 RESEARCH_REPORT_PROMPT_TEMPLATE = PromptTemplate.from_template(
     template=RESEARCH_REPORT_INSTRUCTIONS

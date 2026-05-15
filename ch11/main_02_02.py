@@ -12,8 +12,9 @@ import random
 
 from langchain_community.document_loaders import AsyncHtmlLoader
 from langchain_community.vectorstores import Chroma
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_anthropic import ChatAnthropic
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.messages import BaseMessage, HumanMessage, ToolMessage, SystemMessage
 from langchain_core.tools import tool
 
@@ -49,7 +50,7 @@ async def build_vectorstore(destinations: Sequence[str]) -> Chroma: #B
     chunks = sum([splitter.split_documents([d]) for d in docs], []) #D
 
     print(f"Embedding {len(chunks)} chunks ...") #E
-    vectordb_client = Chroma.from_documents(chunks, embedding=OpenAIEmbeddings()) #E
+    vectordb_client = Chroma.from_documents(chunks, embedding=HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")) #E
     print("Vector store ready.\n")
     return vectordb_client #F
 
@@ -60,8 +61,8 @@ _ti_vectorstore_client: Chroma | None = None #G
 def get_travel_info_vectorstore() -> Chroma: #H
     global _ti_vectorstore_client
     if _ti_vectorstore_client is None:
-        if not os.environ.get("OPENAI_API_KEY"):
-            raise RuntimeError("Set the OPENAI_API_KEY env variable and re-run.")
+        if not os.environ.get("ANTHROPIC_API_KEY"):
+            raise RuntimeError("Set the ANTHROPIC_API_KEY env variable and re-run.")
         _ti_vectorstore_client = asyncio.run(build_vectorstore(UK_DESTINATIONS))
     return _ti_vectorstore_client #I
 
@@ -85,8 +86,7 @@ ti_retriever = ti_vectorstore_client.as_retriever() #K
 # 2. Define the only tool
 # ----------------------------------------------------------------------------
 
-@tool(description="""Search travel information 
-about destinations in England.""") #A
+@tool(description="""Search travel information about destinations in England.""") #A
 def search_travel_info(query: str) -> str: #B
     """Search embedded WikiVoyage content for information about destinations in England."""
     docs = ti_retriever.invoke(query) #C
@@ -111,8 +111,8 @@ def weather_forecast(town: str) -> dict:
 # ----------------------------------------------------------------------------
 TOOLS = [search_travel_info, weather_forecast] #A
 
-llm_model = ChatOpenAI(temperature=0, model="gpt-4.1-mini", #B
-                       use_responses_api=True) #B
+llm_model = ChatAnthropic(temperature=0, model="claude-sonnet-4-6", ) 
+                       #use_responses_api=True) #B
 llm_with_tools = llm_model.bind_tools(TOOLS) #C
 
 #A Define the tools list (in our case, only one tool)
@@ -187,16 +187,21 @@ tools_execution_node = ToolsExecutionNode(TOOLS) #N
 
 def llm_node(state: AgentState): #A    
     """LLM node that decides whether to call the search tool."""
-    current_messages = state["messages"] #B
     system_message = SystemMessage(content="""You are a helpful assistant 
     that can search travel information and get the weather forecast. 
     Only use the tools to find the information 
-    you need (including town names).""") #C
-    current_messages.append(system_message) #D
-    respose_message = llm_with_tools.invoke(
+    you need (including town names).""")
+    
+    # Only prepend if not already there
+    if not isinstance(state["messages"][0], SystemMessage):
+        current_messages = [system_message] + state["messages"]
+    else:
+        current_messages = state["messages"]
+
+    response_message = llm_with_tools.invoke(
         current_messages) #E
 
-    return {"messages": [respose_message]} #F
+    return {"messages": [response_message]} #F
 
 #A Define the LLM node
 #B Get the current messages from the agent state

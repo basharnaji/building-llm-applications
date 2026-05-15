@@ -11,8 +11,9 @@ import random
 
 from langchain_community.document_loaders import AsyncHtmlLoader
 from langchain_community.vectorstores import Chroma
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_anthropic import ChatAnthropic
+from langchain_huggingface import HuggingFaceEmbeddings 
 from langchain_core.messages import BaseMessage, HumanMessage
 from langgraph.managed.is_last_step import RemainingSteps
 from langchain_core.tools import tool
@@ -48,7 +49,7 @@ async def build_vectorstore(destinations: Sequence[str]) -> Chroma: #B
     chunks = sum([splitter.split_documents([d]) for d in docs], []) #D
 
     print(f"Embedding {len(chunks)} chunks ...") #E
-    vectordb_client = Chroma.from_documents(chunks, embedding=OpenAIEmbeddings()) #E
+    vectordb_client = Chroma.from_documents(chunks, embedding=HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")) #E
     print("Vector store ready.\n")
     return vectordb_client #F
 
@@ -59,8 +60,8 @@ _ti_vectorstore_client: Chroma | None = None #G
 def get_travel_info_vectorstore() -> Chroma: #H
     global _ti_vectorstore_client
     if _ti_vectorstore_client is None:
-        if not os.environ.get("OPENAI_API_KEY"):
-            raise RuntimeError("Set the OPENAI_API_KEY env variable and re-run.")
+        if not os.environ.get("ANTHROPIC_API_KEY"):
+            raise RuntimeError("Set the ANTHROPIC_API_KEY env variable and re-run.")
         _ti_vectorstore_client = asyncio.run(build_vectorstore(UK_DESTINATIONS))
     return _ti_vectorstore_client #I
 
@@ -110,9 +111,9 @@ def weather_forecast(town: str) -> dict:
 # ----------------------------------------------------------------------------
 TOOLS = [search_travel_info, weather_forecast] #A
 
-llm_model = ChatOpenAI(temperature=0, model="gpt-4.1-mini", #B
-                       use_responses_api=True) #B
-
+llm_model = ChatAnthropic(temperature=0, model="claude-sonnet-4-6", ) 
+                       #use_responses_api=True) #B
+llm_with_tools = llm_model.bind_tools(TOOLS) #C
 
 #A Define the tools list (in our case, only one tool)
 #B Instantiate the LLM model with the gpt-4.1-mini model and the responses API

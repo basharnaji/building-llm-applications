@@ -11,8 +11,9 @@ from dotenv import load_dotenv
 
 from langchain_community.document_loaders import AsyncHtmlLoader
 from langchain_community.vectorstores import Chroma
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_anthropic import ChatAnthropic
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.messages import BaseMessage, HumanMessage, ToolMessage
 from langchain_core.tools import tool
 
@@ -54,7 +55,7 @@ async def build_vectorstore(
 
     print(f"Embedding {len(chunks)} chunks ...") #E
     vectordb_client = Chroma.from_documents(
-        chunks, embedding=OpenAIEmbeddings()) #E
+        chunks, embedding=HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")) #E
     print("Vector store ready.\n")
     return vectordb_client #F
 
@@ -66,9 +67,9 @@ def get_travel_info_vectorstore() -> Chroma: #H
     global _ti_vectorstore_client
     if _ti_vectorstore_client is None:
         if not os.environ.get(
-            "OPENAI_API_KEY"):
+            "ANTHROPIC_API_KEY"):
             raise RuntimeError(
-                """Set the OPENAI_API_KEY env 
+                """Set the ANTHROPIC_API_KEY env 
                 variable and re-run.""")
         _ti_vectorstore_client = asyncio.run(
             build_vectorstore(UK_DESTINATIONS))
@@ -114,9 +115,9 @@ def search_travel_info(query: str) -> str: #B
 # ----------------------------------------------------------------------------
 TOOLS = [search_travel_info] #A
 
-llm_model = ChatOpenAI(
-    model="gpt-5-mini", #B
-    use_responses_api=True) #B
+llm_model = ChatAnthropic(
+    model="claude-haiku-4-5-20251001",) #B
+    #use_responses_api=True) #B. ***commenting this one line out for OpenAI users, since the responses API is not yet available for OpenAI models. You can uncomment it if you have access to the OpenAI responses API and want to use an OpenAI model instead of Anthropic.
 llm_with_tools = llm_model.bind_tools(TOOLS) #C
 
 #A Define the tools list (in our case, only one tool)
